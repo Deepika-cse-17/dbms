@@ -1,0 +1,3 @@
+com\example\memorymonitor\controller\MemoryController.class
+com\example\memorymonitor\MemoryMonitorApplication.class
+com\example\memorymonitor\service\MemoryService.class
