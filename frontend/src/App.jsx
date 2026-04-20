@@ -1,4 +1,5 @@
 ﻿import { useEffect, useState } from 'react';
+import API from "./api"; 
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -33,9 +34,9 @@ function App() {
   const fetchAll = async () => {
     try {
       const [statusRes, recentRes, alertRes] = await Promise.all([
-        fetch('/api/status'),
-        fetch('/api/logs/recent'),
-        fetch('/api/logs/alerts'),
+        fetch(`${API}/status`),
+        fetch(`${API}/logs/recent`),
+        fetch(`${API}/logs/alerts`),
       ]);
 
       if (!statusRes.ok || !recentRes.ok || !alertRes.ok) {
