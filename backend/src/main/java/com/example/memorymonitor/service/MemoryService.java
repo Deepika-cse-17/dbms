@@ -1,8 +1,10 @@
 package com.example.memorymonitor.service;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import jakarta.mail.internet.MimeMessage;
@@ -20,7 +22,9 @@ public class MemoryService {
     private final JavaMailSender mailSender;
     private final List<String> cache = new ArrayList<>();
     private static final String SENDER_EMAIL = "yourdesignathon@gmail.com";
-    private static final String ALERT_EMAIL = "yourdesignathon@gmail.com";
+    
+    @Value("${memory.alert.email:yourdesignathon@gmail.com}")
+    private String alertEmail;
 
     public MemoryService(JdbcTemplate jdbcTemplate, JavaMailSender mailSender) {
         this.jdbcTemplate = jdbcTemplate;
@@ -33,15 +37,9 @@ public class MemoryService {
         double prediction = predictMemory(percent);
         List<String> currentCache = manageCache("Sample_Data", percent);
         String action = percent > 80 ? "Cache Cleared" : "Cache Active";
-        String alertStatus = percent > 80 ? "HIGH" : "NORMAL";
-        boolean alertSent = false;
+        String alertStatus = "NORMAL";
 
-        if (percent > 80 && shouldSendHighAlert()) {
-            sendEmail(ALERT_EMAIL, percent);
-            alertSent = true;
-        }
-
-        insertLog((double) memoryStatus.get("used"), (double) memoryStatus.get("available"), percent, action, alertStatus, alertSent);
+        insertLog((double) memoryStatus.get("used"), (double) memoryStatus.get("available"), percent, action, alertStatus, false);
 
         Map<String, Object> response = new HashMap<>();
         response.put("memory", memoryStatus);
@@ -50,6 +48,16 @@ public class MemoryService {
         response.put("action", action);
 
         return response;
+    }
+
+    @Scheduled(fixedRate = 60000) // Run every 60 seconds (1 minute)
+    public void sendPeriodicMemoryReport() {
+        Map<String, Object> memoryStatus = getMemoryStatus();
+        double used = (double) memoryStatus.get("used");
+        double available = (double) memoryStatus.get("available");
+        double percent = (double) memoryStatus.get("percent");
+        
+        sendPeriodicEmail(alertEmail, used, available, percent);
     }
 
     public List<Map<String, Object>> getRecentLogs() {
@@ -109,14 +117,6 @@ public class MemoryService {
         );
     }
 
-    private boolean shouldSendHighAlert() {
-        Integer highAlertCount = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM memory_logs WHERE alert_status = 'HIGH' AND alert_sent = TRUE",
-                Integer.class
-        );
-        return highAlertCount == null || highAlertCount == 0;
-    }
-
     private Map<String, Object> mapLogRow(java.sql.ResultSet rs) throws java.sql.SQLException {
         Map<String, Object> row = new HashMap<>();
         row.put("id", rs.getLong("id"));
@@ -130,14 +130,24 @@ public class MemoryService {
         return row;
     }
 
-    private void sendEmail(String recipient, double percent) {
+    private void sendPeriodicEmail(String recipient, double used, double available, double percent) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, false, "UTF-8");
             helper.setFrom(SENDER_EMAIL, "RAM Monitor System");
             helper.setTo(recipient);
-            helper.setSubject("RAM Usage Alert");
-            helper.setText(String.format("Your RAM storage is high(%.2f%%). Please clear it immediately.", percent), false);
+            helper.setSubject("Periodic Memory Usage Report");
+            
+            String emailBody = String.format(
+                "Memory Usage Report:\n\n" +
+                "Used Memory: %.2f GB\n" +
+                "Available Memory: %.2f GB\n" +
+                "Memory Usage: %.2f%%\n\n" +
+                "This is an automated periodic report sent every minute.",
+                used, available, percent
+            );
+            
+            helper.setText(emailBody, false);
             mailSender.send(message);
         } catch (Exception ex) {
             ex.printStackTrace();
