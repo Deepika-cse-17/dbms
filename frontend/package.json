@@ -2,7 +2,7 @@
   "name": "memory-monitor-frontend",
   "private": true,
   "version": "0.0.0",
-  "homepage": "https://github.com/Deepika-cse-17/dbms.git",
+  "homepage": "https://deepika-cse-17.github.io/dbms/",
   "type": "module",
   "scripts": {
     "dev": "vite",
