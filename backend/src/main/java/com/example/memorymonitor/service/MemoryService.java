@@ -1,10 +1,11 @@
 package com.example.memorymonitor.service;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import jakarta.mail.internet.MimeMessage;
@@ -50,13 +51,13 @@ public class MemoryService {
         return response;
     }
 
-    @Scheduled(fixedRate = 60000) // Run every 60 seconds (1 minute)
-    public void sendPeriodicMemoryReport() {
+    @EventListener(ApplicationReadyEvent.class)
+    public void sendStartupMemoryReport() {
         Map<String, Object> memoryStatus = getMemoryStatus();
         double used = (double) memoryStatus.get("used");
         double available = (double) memoryStatus.get("available");
         double percent = (double) memoryStatus.get("percent");
-        
+
         sendPeriodicEmail(alertEmail, used, available, percent);
     }
 
