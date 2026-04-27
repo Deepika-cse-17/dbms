@@ -1,3 +1,6 @@
-com\example\memorymonitor\controller\MemoryController.class
+com\example\memorymonitor\HomeController.class
 com\example\memorymonitor\MemoryMonitorApplication.class
+com\example\memorymonitor\config\CorsConfig$1.class
+com\example\memorymonitor\controller\MemoryController.class
+com\example\memorymonitor\config\CorsConfig.class
 com\example\memorymonitor\service\MemoryService.class
